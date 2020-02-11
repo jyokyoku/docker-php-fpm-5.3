@@ -111,6 +111,7 @@ modules enabled by default visit: **[devilbox/docker-php-fpm](https://github.com
 | openssl      | ✔         |
 | pcre         | ✔         |
 | PDO          | ✔         |
+| pdo_mysql    | ✔         |
 | pdo_sqlite   | ✔         |
 | Phar         | ✔         |
 | posix        | ✔         |
