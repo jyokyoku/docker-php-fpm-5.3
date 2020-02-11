@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-MODULES="$( docker run --rm -t --entrypoint=php  devilbox/php-fpm-5.3 -m \
+MODULES="$( docker run --rm -t --entrypoint=php  jyokyoku/php:5.3.3-fpm -m \
 	| grep -vE '(^\[)|(^\s*$)' \
 	| sort -u
 )"

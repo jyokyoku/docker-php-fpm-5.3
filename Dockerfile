@@ -1,5 +1,5 @@
 FROM debian:jessie
-MAINTAINER "cytopia" <cytopia@everythingcli.org>
+MAINTAINER "jyokyoku" <jyokyoku@gmail.com>
 
 # persistent / runtime deps
 RUN set -xe \
@@ -7,11 +7,13 @@ RUN set -xe \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
 		ca-certificates \
 		curl \
+		patch \
 		libpcre3 \
 		librecode0 \
 		libmysqlclient-dev \
 		libsqlite3-0 \
 		libxml2 \
+		libevent-dev \
 	&& DEBIAN_FRONTEND=noninteractive apt-get purge -qq -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
 	&& rm -rf /var/lib/apt/lists/*
 
@@ -36,7 +38,7 @@ RUN mkdir -p $PHP_INI_DIR/conf.d
 
 # compile openssl, otherwise --with-openssl won't work
 RUN set -xe \
-	&& OPENSSL_VERSION="1.0.2g" \
+	&& OPENSSL_VERSION="1.0.2e" \
 	&& cd /tmp \
 	&& mkdir openssl \
 	&& curl -sL "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz" -o openssl.tar.gz \
@@ -49,8 +51,9 @@ RUN set -xe \
 	&& make install \
 	&& rm -rf /tmp/*
 
-ENV PHP_VERSION 5.3.29
+ENV PHP_VERSION 5.3.3
 COPY data/docker-php-source /usr/local/bin/
+COPY data/php.patch /usr/src/
 
 # php 5.3 needs older autoconf
 # --enable-mysqlnd is included below because it's harder to compile after the fact the extensions are (since it's a plugin for several extensions, not an extension in itself)
@@ -72,11 +75,11 @@ RUN set -xe \
 	&& rm -rf /var/lib/apt/lists/* \
 	\
 	&& mkdir -p /usr/src/php \
-	&& curl -SL "http://php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror" -o /usr/src/php.tar.xz \
-	&& curl -SL "http://php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror" -o /usr/src/php.tar.xz.asc \
+	&& curl -SL "https://museum.php.net/php5/php-$PHP_VERSION.tar.gz" -o /usr/src/php.tar.gz \
 	&& cd /usr/src \
 	&& docker-php-source extract \
 	&& cd /usr/src/php \
+	&& patch -p0 < ../php.patch \
 	&& ./configure \
 		--with-config-file-path="$PHP_INI_DIR" \
 		--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
@@ -85,7 +88,8 @@ RUN set -xe \
 		--with-fpm-group=www-data \
 		--disable-cgi \
 		--enable-mysqlnd \
-		--with-mysql \
+		--with-mysql=mysqlnd \
+		--with-pdo-mysql=mysqlnd \
 		--with-curl \
 		--with-openssl=/usr/local/ssl \
 		--with-readline \
